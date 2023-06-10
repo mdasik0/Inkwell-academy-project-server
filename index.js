@@ -36,8 +36,20 @@ async function run() {
 
     // DataCollections
     const allUserCollection = client.db("inkwell").collection("allusers");
+    const addAClassCollection = client.db("inkwell").collection("classes");
 
-    // send a new user Data
+    // --------------------------------
+    // Add a class
+    // --------------------------------
+    app.post("/addClass", async(req,res) => {
+      const classObj = req.body;
+      const result = await addAClassCollection.insertOne(classObj);
+      res.send(result)
+    })
+
+    // ----------------------------------------------------------------
+    // store sign Up and social login data to get the count of students
+    // ----------------------------------------------------------------
     app.post("/users", async (req, res) => {
       const user = req.body;
       const query = { email: user.email };
@@ -49,11 +61,17 @@ async function run() {
       res.send(result);
     });
 
+    // --------------------------------
+    // get all Data of users
+    // --------------------------------
     app.get("/users", async (req, res) => {
       const result = await allUserCollection.find().toArray();
       res.send(result);
     });
 
+    // --------------------------------
+    // make admin here
+    // --------------------------------
     app.patch("/users/admin/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
@@ -65,7 +83,10 @@ async function run() {
       const result = await allUserCollection.updateOne(filter, updatedoc);
       res.send(result);
     });
-    
+
+    // --------------------------------
+    // make instructor here
+    // --------------------------------
     app.patch("/users/instructor/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
