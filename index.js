@@ -36,17 +36,23 @@ async function run() {
 
     // DataCollections
     const allUserCollection = client.db("inkwell").collection("allusers");
-    const addAClassCollection = client.db("inkwell").collection("classes");
+    const ClassesCollection = client.db("inkwell").collection("classes");
 
     // --------------------------------
     // Add a class
     // --------------------------------
     app.post("/addClass", async(req,res) => {
       const classObj = req.body;
-      const result = await addAClassCollection.insertOne(classObj);
+      const result = await ClassesCollection.insertOne(classObj);
       res.send(result)
     })
-
+    // --------------------------------
+    // Get all classes Data 
+    // --------------------------------
+    app.get("/Classes", async(req,res) => {
+      const result = await ClassesCollection.find().toArray();
+      res.send(result)
+    })
     // ----------------------------------------------------------------
     // store sign Up and social login data to get the count of students
     // ----------------------------------------------------------------
