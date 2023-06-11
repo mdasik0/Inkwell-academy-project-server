@@ -64,6 +64,15 @@ async function run() {
       const result = await selectedClassesCollection.find().toArray();
       res.send(result)
     })
+    // --------------------------------
+    // Selected Data get
+    // --------------------------------
+    app.get("/selectedClass/:id", async(req,res) => {
+      const id = req.params.id;
+      const query = {_id : new ObjectId(id)}
+      const result = await selectedClassesCollection.findOne(query)
+      res.send(result)
+    })
     // create payment intent
     app.post("/create-payment-intent", async (req, res) => {
       const { price } = req.body;
