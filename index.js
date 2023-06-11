@@ -49,11 +49,18 @@ async function run() {
     })
 
     // --------------------------------
-    // Selected Data
+    // Selected Data post
     // --------------------------------
     app.post("/selectedClass", async(req,res) => {
       const selectedClass = req.body;
       const result = await selectedClassesCollection.insertOne(selectedClass);
+      res.send(result)
+    })
+    // --------------------------------
+    // Selected Data get
+    // --------------------------------
+    app.get("/selectedClass", async(req,res) => {
+      const result = await selectedClassesCollection.find().toArray();
       res.send(result)
     })
     // --------------------------------
