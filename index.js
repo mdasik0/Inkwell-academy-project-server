@@ -61,6 +61,14 @@ async function run() {
       res.send(result);
     })
     // --------------------------------
+    // Show approved classes
+    // --------------------------------
+    app.get("/approvedClasses", async(req,res) => {
+      const query = { status : "approved" };
+      const result = await ClassesCollection.find(query).toArray();
+      res.send(result)
+    })
+    // --------------------------------
     // Deny a class
     // --------------------------------
     app.patch("/classes/deny/:id", async(req,res) => {
@@ -70,6 +78,20 @@ async function run() {
         $set: {
           status: "denied",
         },
+      };
+      const result = await ClassesCollection.updateOne(filter, updatedoc);
+      res.send(result);
+    })
+    // --------------------------------
+    // Add review to class
+    // --------------------------------
+    app.patch("/classes/review/:id", async(req,res) => {
+      const id = req.params.id;
+      const data = req.body;
+      console.log(data)
+      const filter = { _id: new ObjectId(id) };
+      const updatedoc = {
+        $set: data,
       };
       const result = await ClassesCollection.updateOne(filter, updatedoc);
       res.send(result);
