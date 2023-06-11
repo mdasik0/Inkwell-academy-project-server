@@ -47,9 +47,37 @@ async function run() {
       res.send(result)
     })
     // --------------------------------
+    // Approve a class
+    // --------------------------------
+    app.patch("/classes/approve/:id", async(req,res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedoc = {
+        $set: {
+          status: "approved",
+        },
+      };
+      const result = await ClassesCollection.updateOne(filter, updatedoc);
+      res.send(result);
+    })
+    // --------------------------------
+    // Deny a class
+    // --------------------------------
+    app.patch("/classes/deny/:id", async(req,res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedoc = {
+        $set: {
+          status: "denied",
+        },
+      };
+      const result = await ClassesCollection.updateOne(filter, updatedoc);
+      res.send(result);
+    })
+    // --------------------------------
     // Get all classes Data 
     // --------------------------------
-    app.get("/Classes", async(req,res) => {
+    app.get("/classes", async(req,res) => {
       const result = await ClassesCollection.find().toArray();
       res.send(result)
     })
