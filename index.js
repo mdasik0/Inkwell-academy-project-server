@@ -37,6 +37,7 @@ async function run() {
     // DataCollections
     const allUserCollection = client.db("inkwell").collection("allusers");
     const ClassesCollection = client.db("inkwell").collection("classes");
+    const selectedClassesCollection = client.db("inkwell").collection("selectedClasses");
 
     // --------------------------------
     // Add a class
@@ -44,6 +45,15 @@ async function run() {
     app.post("/addClass", async(req,res) => {
       const classObj = req.body;
       const result = await ClassesCollection.insertOne(classObj);
+      res.send(result)
+    })
+
+    // --------------------------------
+    // Selected Data
+    // --------------------------------
+    app.post("/selectedClass", async(req,res) => {
+      const selectedClass = req.body;
+      const result = await selectedClassesCollection.insertOne(selectedClass);
       res.send(result)
     })
     // --------------------------------
@@ -124,15 +134,7 @@ async function run() {
       const result = await allUserCollection.find().toArray();
       res.send(result);
     });
-    // --------------------------------
-    // get users Data by email
-    // --------------------------------
-    app.get("/users/:email", async(req,res) => {
-      const email = req.params.email;
-      const query = { email : email};
-      const result = await allUserCollection.findOne(query)
-      res.send(result)
-    })
+    
     // --------------------------------
     // make admin here
     // --------------------------------
