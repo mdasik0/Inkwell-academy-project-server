@@ -34,7 +34,6 @@ function verifyJWT(req,res,next) {
     if(err){
       return res.status(403).send({error: "unauthorized Access"})
     }
-console.log({decoded})
     req.decoded = decoded
   })
   next()
@@ -86,21 +85,22 @@ async function run() {
       res.send(result);
     });
     // create payment intent
-    app.post("/create-payment-intent",verifyJWT, async (req, res) => {
+    app.post("/create-payment-intent", async (req, res) => {
       const { price } = req.body;
-      const amount = price * 100;
-
+      const amount = Math.round(price * 100);
+    
       // Create a PaymentIntent with the order amount and currency
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
         currency: "usd",
         payment_method_types: ["card"],
       });
-
+    
       res.send({
         clientSecret: paymentIntent.client_secret,
       });
     });
+    
 
     // --------------------------------
     // Approve a class
@@ -144,7 +144,6 @@ async function run() {
     app.patch("/classes/review/:id", async (req, res) => {
       const id = req.params.id;
       const data = req.body;
-      console.log(data);
       const filter = { _id: new ObjectId(id) };
       const updatedoc = {
         $set: data,
