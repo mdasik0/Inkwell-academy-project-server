@@ -2,7 +2,7 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 const app = express();
-const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
+const stripe = require("stripe")(process.env.PAYMENT_SECRET_KEY);
 const port = process.env.PORT || 5000;
 
 // middleware
@@ -38,54 +38,55 @@ async function run() {
     // DataCollections
     const allUserCollection = client.db("inkwell").collection("allusers");
     const ClassesCollection = client.db("inkwell").collection("classes");
-    const selectedClassesCollection = client.db("inkwell").collection("selectedClasses");
+    const selectedClassesCollection = client
+      .db("inkwell")
+      .collection("selectedClasses");
 
     // --------------------------------
     // Add a class
     // --------------------------------
-    app.post("/addClass", async(req,res) => {
+    app.post("/addClass", async (req, res) => {
       const classObj = req.body;
       const result = await ClassesCollection.insertOne(classObj);
-      res.send(result)
-    })
+      res.send(result);
+    });
 
     // --------------------------------
     // Selected Data post
     // --------------------------------
-    app.post("/selectedClass", async(req,res) => {
+    app.post("/selectedClass", async (req, res) => {
       const selectedClass = req.body;
       const result = await selectedClassesCollection.insertOne(selectedClass);
-      res.send(result)
-    })
+      res.send(result);
+    });
     // --------------------------------
     // Selected Data get
     // --------------------------------
-    app.get("/selectedClass", async(req,res) => {
+    app.get("/selectedClass", async (req, res) => {
       const result = await selectedClassesCollection.find().toArray();
-      res.send(result)
-    })
+      res.send(result);
+    });
     // --------------------------------
     // Selected Data get
     // --------------------------------
-    app.get("/selectedClass/:id", async(req,res) => {
+    app.get("/selectedClass/:id", async (req, res) => {
       const id = req.params.id;
-      const query = {_id : new ObjectId(id)}
-      const result = await selectedClassesCollection.findOne(query)
-      res.send(result)
-    })
+      const query = { _id: new ObjectId(id) };
+      const result = await selectedClassesCollection.findOne(query);
+      res.send(result);
+    });
     // create payment intent
     app.post("/create-payment-intent", async (req, res) => {
       const { price } = req.body;
-      const amount = price*100
-    
+      const amount = price * 100;
+
       // Create a PaymentIntent with the order amount and currency
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
         currency: "usd",
-        payment_method_types: ['card']
-        
+        payment_method_types: ["card"],
       });
-    
+
       res.send({
         clientSecret: paymentIntent.client_secret,
       });
@@ -94,7 +95,7 @@ async function run() {
     // --------------------------------
     // Approve a class
     // --------------------------------
-    app.patch("/classes/approve/:id", async(req,res) => {
+    app.patch("/classes/approve/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updatedoc = {
@@ -104,19 +105,19 @@ async function run() {
       };
       const result = await ClassesCollection.updateOne(filter, updatedoc);
       res.send(result);
-    })
+    });
     // --------------------------------
     // Show approved classes
     // --------------------------------
-    app.get("/approvedClasses", async(req,res) => {
-      const query = { status : "approved" };
+    app.get("/approvedClasses", async (req, res) => {
+      const query = { status: "approved" };
       const result = await ClassesCollection.find(query).toArray();
-      res.send(result)
-    })
+      res.send(result);
+    });
     // --------------------------------
     // Deny a class
     // --------------------------------
-    app.patch("/classes/deny/:id", async(req,res) => {
+    app.patch("/classes/deny/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
       const updatedoc = {
@@ -126,28 +127,28 @@ async function run() {
       };
       const result = await ClassesCollection.updateOne(filter, updatedoc);
       res.send(result);
-    })
+    });
     // --------------------------------
     // Add review to class
     // --------------------------------
-    app.patch("/classes/review/:id", async(req,res) => {
+    app.patch("/classes/review/:id", async (req, res) => {
       const id = req.params.id;
       const data = req.body;
-      console.log(data)
+      console.log(data);
       const filter = { _id: new ObjectId(id) };
       const updatedoc = {
         $set: data,
       };
       const result = await ClassesCollection.updateOne(filter, updatedoc);
       res.send(result);
-    })
+    });
     // --------------------------------
-    // Get all classes Data 
+    // Get all classes Data
     // --------------------------------
-    app.get("/classes", async(req,res) => {
+    app.get("/classes", async (req, res) => {
       const result = await ClassesCollection.find().toArray();
-      res.send(result)
-    })
+      res.send(result);
+    });
     // ----------------------------------------------------------------
     // store sign Up and social login data to get the count of students
     // ----------------------------------------------------------------
@@ -173,13 +174,13 @@ async function run() {
     // --------------------------------
     // get all Data of users
     // --------------------------------
-    app.get("/users", async (req, res) => {
-      const email = req.query.email;
-      const query = {email : email}
+    app.get("/users/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email }
       const result = await allUserCollection.findOne(query);
       res.send(result);
     });
-    
+
     // --------------------------------
     // make admin here
     // --------------------------------
