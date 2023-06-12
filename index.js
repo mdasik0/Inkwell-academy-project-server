@@ -23,21 +23,20 @@ const client = new MongoClient(uri, {
   },
 });
 // middleware function for verifying token
-function verifyJWT(req,res,next) {
+function verifyJWT(req, res, next) {
   const authorization = req.headers.authorization;
-  if(!authorization){
-    return res.status(401).send({error: "unauthorized Access"})
+  if (!authorization) {
+    return res.status(401).send({ error: "unauthorized Access" });
   }
 
-  const token= authorization.split(" ")[1]
+  const token = authorization.split(" ")[1];
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
-    if(err){
-      return res.status(403).send({error: "unauthorized Access"})
+    if (err) {
+      return res.status(403).send({ error: "unauthorized Access" });
     }
-    req.decoded = decoded
-  })
-  next()
-
+    req.decoded = decoded;
+  });
+  next();
 }
 
 async function run() {
@@ -50,11 +49,12 @@ async function run() {
     const allUserCollection = client.db("inkwell").collection("allusers");
     const ClassesCollection = client.db("inkwell").collection("allCourses");
     const selectEDcourses = client.db("inkwell").collection("selectedCourses");
+    const paymentCollections = client.db("inkwell").collection("payments");
 
     // --------------------------------
     // Add a class
     // --------------------------------
-    app.post("/addClass",verifyJWT, async (req, res) => {
+    app.post("/addClass", verifyJWT, async (req, res) => {
       const classObj = req.body;
       const result = await ClassesCollection.insertOne(classObj);
       res.send(result);
@@ -63,44 +63,90 @@ async function run() {
     // --------------------------------
     // Selected Data post
     // --------------------------------
-    app.post("/selectedClass",verifyJWT, async (req, res) => {
+    app.post("/selectedClass", verifyJWT, async (req, res) => {
       const selectedClass = req.body;
       const result = await selectEDcourses.insertOne(selectedClass);
       res.send(result);
     });
-    // --------------------------------
-    // Selected class get all data 
-    // --------------------------------
-    app.get("/selectedClass",verifyJWT, async (req, res) => {
-      const result = await selectEDcourses.find().toArray();
+    app.get("/selectedClass/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await selectEDcourses.find(query).toArray();
       res.send(result);
     });
     // --------------------------------
+    // Selected class get all data
+    // --------------------------------
+    app.get("/selectedClass", verifyJWT, async (req, res) => {
+      const result = await selectEDcourses.find().toArray();
+      res.send(result);
+    });
+
+    app.get("/popularClass", async (req, res) => {
+      const cursor = ClassesCollection.find().sort({ enrollmentCount: -1 });
+      const result = await cursor.toArray();
+      if (result.length > 6) {
+        const data = result.slice(0, 6);
+        res.send(data);
+      } else {
+        res.send(result);
+      }
+    });
+
+    app.patch("/updateData/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const update = {
+        $inc: {
+          enrollmentCount: +1,
+          seats: -1,
+        },
+      };
+
+      const updatedDocument = await ClassesCollection.updateOne(filter, update);
+
+      res.send(updatedDocument);
+    });
+
+    // --------------------------------
     // Selected class get single data by id
     // --------------------------------
-    app.get("/selectedClass/:id", async (req, res) => {
+    app.get("/paymentToClass/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await selectEDcourses.findOne(query);
       res.send(result);
     });
-    // create payment intent
+    // --------------------------------
+    // payment intent
+    // --------------------------------
     app.post("/create-payment-intent", async (req, res) => {
       const { price } = req.body;
       const amount = Math.round(price * 100);
-    
+
       // Create a PaymentIntent with the order amount and currency
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
         currency: "usd",
         payment_method_types: ["card"],
       });
-    
+
       res.send({
         clientSecret: paymentIntent.client_secret,
       });
     });
-    
+    // --------------------------------
+    // payment post info
+    // --------------------------------
+    app.post("/payment", verifyJWT, async (req, res) => {
+      const payment = req.body;
+      const insertResult = await paymentCollections.insertOne(payment);
+
+      const query = { _id: new ObjectId(payment.selectedItem) };
+      const deleteResult = await selectEDcourses.deleteOne(query);
+
+      res.send({ insertResult, deleteResult });
+    });
 
     // --------------------------------
     // Approve a class
@@ -119,7 +165,7 @@ async function run() {
     // --------------------------------
     // Show approved classes
     // --------------------------------
-    app.get("/approvedClasses",verifyJWT, async (req, res) => {
+    app.get("/approvedClasses", verifyJWT, async (req, res) => {
       const query = { status: "approved" };
       const result = await ClassesCollection.find(query).toArray();
       res.send(result);
@@ -154,8 +200,15 @@ async function run() {
     // --------------------------------
     // Get all classes Data
     // --------------------------------
-    app.get("/classes",verifyJWT, async (req, res) => {
+    app.get("/classes", verifyJWT, async (req, res) => {
       const result = await ClassesCollection.find().toArray();
+      res.send(result);
+    });
+    // get data by email
+    app.get("/myClasses/:email", verifyJWT, async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await ClassesCollection.find(query).toArray();
       res.send(result);
     });
     // user management
@@ -164,12 +217,12 @@ async function run() {
       const token = jwt.sign(body, process.env.ACCESS_TOKEN_SECRET, {
         expiresIn: "1h",
       });
-      res.send({token})
+      res.send({ token });
     });
     // ----------------------------------------------------------------
     // store sign Up and social login data to get the count of students
     // ----------------------------------------------------------------
-    app.post("/users", async (req, res) => {
+    app.post("/users", verifyJWT, async (req, res) => {
       const user = req.body;
       const query = { email: user.email };
       const existingUser = await allUserCollection.findOne(query);
@@ -183,15 +236,33 @@ async function run() {
     // --------------------------------
     // get all Data of users
     // --------------------------------
-    app.get("/users",verifyJWT, async (req, res) => {
+    app.get("/users", verifyJWT, async (req, res) => {
       const result = await allUserCollection.find().toArray();
       res.send(result);
+    });
+
+    // show all instructor data
+    app.get("/instructors", async (req, res) => {
+      const query = { role: "instructor" };
+      const result = await allUserCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.get("/instructorsSix", async (req, res) => {
+      const query = { role: "instructor" };
+      const result = await allUserCollection.find(query).toArray();
+
+      if (result.length > 6) {
+        const data = result.slice(0, 6);
+        res.send(data);
+      } else {
+        res.send(result);
+      }
     });
 
     // --------------------------------
     // get all Data of users
     // --------------------------------
-    app.get("/users/:email",verifyJWT, async (req, res) => {
+    app.get("/users/:email", verifyJWT, async (req, res) => {
       const email = req.params.email;
       const query = { email: email };
       const result = await allUserCollection.findOne(query);
@@ -237,8 +308,6 @@ async function run() {
   }
 }
 run().catch(console.dir);
-
-
 
 app.get("/", (req, res) => {
   res.send("summer Camp Server is running");
