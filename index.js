@@ -169,6 +169,16 @@ async function run() {
       const result = await allUserCollection.find().toArray();
       res.send(result);
     });
+
+    // --------------------------------
+    // get all Data of users
+    // --------------------------------
+    app.get("/users", async (req, res) => {
+      const email = req.query.email;
+      const query = {email : email}
+      const result = await allUserCollection.findOne(query);
+      res.send(result);
+    });
     
     // --------------------------------
     // make admin here
