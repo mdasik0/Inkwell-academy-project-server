@@ -83,7 +83,8 @@ async function run() {
     });
 
     app.get("/popularClass", async (req, res) => {
-      const cursor = ClassesCollection.find().sort({ enrollmentCount: -1 });
+      const query = {status : 'approved'} 
+      const cursor = ClassesCollection.find(query).sort({ enrollmentCount: -1 });
       const result = await cursor.toArray();
       if (result.length > 6) {
         const data = result.slice(0, 6);
