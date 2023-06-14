@@ -82,7 +82,7 @@ async function run() {
     // --------------------------------
     // Selected Data post
     // --------------------------------
-    app.post("/selectedClass", verifyJWT, async (req, res) => {
+    app.post("/selectedClass", async (req, res) => {
       const selectedClass = req.body;
       const result = await selectEDcourses.insertOne(selectedClass);
       res.send(result);
@@ -188,11 +188,20 @@ async function run() {
     // --------------------------------
     // Show approved classes
     // --------------------------------
-    app.get("/approvedClasses", verifyJWT, async (req, res) => {
+    app.get("/approvedClasses", async (req, res) => {
       const query = { status: "approved" };
       const result = await ClassesCollection.find(query).toArray();
       res.send(result);
     });
+    // 
+    //       Delete selected classes
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    app.delete("/DeletedSelectedClass/:id", async (req,res) => {
+      const id = req.params.id;
+      const query = {_id : new ObjectId(id)}
+      const result = await selectEDcourses.deleteOne(query);
+      res.send(result)
+    })
     // --------------------------------
     // Deny a class
     // --------------------------------
