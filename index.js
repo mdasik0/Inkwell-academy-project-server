@@ -42,7 +42,7 @@ function verifyJWT(req, res, next) {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
     // Send a ping to confirm a successful connection
 
     // DataCollections
@@ -57,6 +57,25 @@ async function run() {
     app.post("/addClass", verifyJWT, async (req, res) => {
       const classObj = req.body;
       const result = await ClassesCollection.insertOne(classObj);
+      res.send(result);
+    });
+    // [[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]
+    //        Enrollemnt data
+    // [[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]
+    app.get("/enrolledClasses/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await paymentCollections.find(query).toArray();
+      res.send(result);
+    });
+    // [[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]
+    //            Payment History
+    // [[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]
+    app.get("/paymentHistory/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email: email };
+      const cursor = paymentCollections.find(query).sort({ date: -1 })
+      const result = await cursor.toArray();
       res.send(result);
     });
 
@@ -74,26 +93,29 @@ async function run() {
       const result = await selectEDcourses.find(query).toArray();
       res.send(result);
     });
-    // --------------------------------
+    //
     // Selected class get all data
-    // --------------------------------
+    //
     app.get("/selectedClass", verifyJWT, async (req, res) => {
       const result = await selectEDcourses.find().toArray();
       res.send(result);
     });
-
+    //
+    // Home page popular classes
+    //
     app.get("/popularClass", async (req, res) => {
-      const query = {status : 'approved'} 
-      const cursor = ClassesCollection.find(query).sort({ enrollmentCount: -1 });
+      const query = { status: "approved" };
+      const cursor = ClassesCollection.find(query).sort({
+        enrollmentCount: -1,
+      });
       const result = await cursor.toArray();
-      if (result.length > 6) {
-        const data = result.slice(0, 6);
-        res.send(data);
-      } else {
-        res.send(result);
-      }
-    });
 
+      const data = result.slice(0, 6);
+      res.send(data);
+    });
+    //
+    // After payment Update enroll and seats
+    //
     app.patch("/updateData/:id", async (req, res) => {
       const id = req.params.id;
       const filter = { _id: new ObjectId(id) };
@@ -115,17 +137,17 @@ async function run() {
     app.get("/paymentToClass/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
+
       const result = await selectEDcourses.findOne(query);
       res.send(result);
     });
     // --------------------------------
-    // payment intent
+    // payment intent for stripe payment
     // --------------------------------
     app.post("/create-payment-intent", async (req, res) => {
       const { price } = req.body;
       const amount = Math.round(price * 100);
 
-      // Create a PaymentIntent with the order amount and currency
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
         currency: "usd",
@@ -212,7 +234,9 @@ async function run() {
       const result = await ClassesCollection.find(query).toArray();
       res.send(result);
     });
+    //
     // user management
+    //
     app.post("/jwt", async (req, res) => {
       const body = req.body;
       const token = jwt.sign(body, process.env.ACCESS_TOKEN_SECRET, {
@@ -241,23 +265,23 @@ async function run() {
       const result = await allUserCollection.find().toArray();
       res.send(result);
     });
-
+    //
     // show all instructor data
+    //
     app.get("/instructors", async (req, res) => {
       const query = { role: "instructor" };
       const result = await allUserCollection.find(query).toArray();
       res.send(result);
     });
+    //
+    // Home page instructor Data
+    //
     app.get("/instructorsSix", async (req, res) => {
       const query = { role: "instructor" };
       const result = await allUserCollection.find(query).toArray();
 
-      if (result.length > 6) {
-        const data = result.slice(0, 6);
-        res.send(data);
-      } else {
-        res.send(result);
-      }
+      const data = result.slice(0, 6);
+      res.send(data);
     });
 
     // --------------------------------
@@ -305,7 +329,6 @@ async function run() {
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
   } finally {
-    // Ensures that the client will close when you finish/error
   }
 }
 run().catch(console.dir);
